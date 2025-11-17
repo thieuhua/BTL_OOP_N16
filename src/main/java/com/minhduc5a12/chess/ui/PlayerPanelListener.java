@@ -9,4 +9,6 @@ public interface PlayerPanelListener {
     void onPieceCaptured(PieceColor capturerColor, ChessPiece capturedPiece);
 
     void onTurnChanged(PieceColor currentPlayerColor);
+
+    void onTimerUpdate(PieceColor color, long timeRemaining);
 }

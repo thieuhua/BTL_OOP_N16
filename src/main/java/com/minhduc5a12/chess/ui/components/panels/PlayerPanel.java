@@ -25,6 +25,7 @@ import javax.swing.SwingUtilities;
 import com.minhduc5a12.chess.constants.PieceColor;
 import com.minhduc5a12.chess.core.model.ChessPiece;
 import com.minhduc5a12.chess.game.ChessController;
+import com.minhduc5a12.chess.game.ChessTimer;
 import com.minhduc5a12.chess.ui.PlayerPanelListener;
 import com.minhduc5a12.chess.utils.ImageLoader;
 
@@ -38,8 +39,10 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
     private final TreeMap<ChessPiece, Integer> capturedPieces;
     private final JPanel capturedPiecesPanel;
     private final JLabel scoreLabel;
+    private final JLabel timerLabel;
     private boolean isActiveTurn;
     private final PieceColor pieceColor;
+    private boolean timeLow = false;
 
     public PlayerPanel(String playerName, PieceColor pieceColor, String avatarPath, ChessController chessController) {
         this.pieceColor = pieceColor;
@@ -60,6 +63,16 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
         nameLabel.setForeground(Color.WHITE);
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Timer label
+        timerLabel = new JLabel("05:00", SwingConstants.CENTER);
+        timerLabel.setFont(new Font("Monospaced", Font.BOLD, 32));
+        timerLabel.setForeground(Color.WHITE);
+        timerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        timerLabel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 100), 2, true),
+                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+
         capturedPiecesPanel = new JPanel();
         capturedPiecesPanel.setMaximumSize(new Dimension(FRAME_WIDTH, 2 * CAPTURED_PIECE_SIZE + 5));
         capturedPiecesPanel.setPreferredSize(new Dimension(FRAME_WIDTH, 2 * CAPTURED_PIECE_SIZE + 5));
@@ -76,6 +89,8 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
         add(avatarLabel);
         add(Box.createVerticalStrut(25));
         add(nameLabel);
+        add(Box.createVerticalStrut(15));
+        add(timerLabel);
         add(Box.createVerticalStrut(5));
         add(capturedPiecesPanel);
         add(Box.createVerticalGlue());
@@ -103,6 +118,13 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
     @Override
     public void onTurnChanged(PieceColor currentPlayerColor) {
         SwingUtilities.invokeLater(() -> setActiveTurn(currentPlayerColor == this.pieceColor));
+    }
+
+    @Override
+    public void onTimerUpdate(PieceColor color, long timeRemaining) {
+        if (color == this.pieceColor) {
+            SwingUtilities.invokeLater(() -> updateTimer(timeRemaining));
+        }
     }
 
     public void addCapturedPiece(ChessPiece piece) {
@@ -160,5 +182,35 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
     public void setActiveTurn(boolean isActiveTurn) {
         this.isActiveTurn = isActiveTurn;
         repaint();
+    }
+
+    /**
+     * Updates the timer display.
+     *
+     * @param timeMs time in milliseconds
+     */
+    public void updateTimer(long timeMs) {
+        String timeText = ChessTimer.formatTime(timeMs);
+        timerLabel.setText(timeText);
+
+        // Change color if time is low (less than 30 seconds)
+        boolean newTimeLow = timeMs < 30000;
+        if (newTimeLow != timeLow) {
+            timeLow = newTimeLow;
+            if (timeLow) {
+                timerLabel.setForeground(new Color(255, 50, 50)); // Red
+            } else {
+                timerLabel.setForeground(Color.WHITE);
+            }
+        }
+    }
+
+    /**
+     * Gets the piece color of this player panel.
+     *
+     * @return the piece color
+     */
+    public PieceColor getPieceColor() {
+        return pieceColor;
     }
 }

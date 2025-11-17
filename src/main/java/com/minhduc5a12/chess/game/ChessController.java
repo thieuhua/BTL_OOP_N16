@@ -54,6 +54,9 @@ public final class ChessController implements MoveExecutor {
 
     private final ChessBoardUI boardUI;
 
+    private ChessTimer chessTimer;
+    private boolean timerEnabled = false;
+
     private final List<PlayerPanelListener> playerPanelListeners = new ArrayList<>();
     private final List<GameStateListener> gameStateListeners = new ArrayList<>();
     private final List<HistoryChangeListener> historyChangeListeners = new ArrayList<>();
@@ -83,6 +86,10 @@ public final class ChessController implements MoveExecutor {
         this.gameMode = GameMode.PLAYER_VS_PLAYER;
         this.whitePlayer = new HumanPlayer(this, PieceColor.WHITE);
         this.blackPlayer = new HumanPlayer(this, PieceColor.BLACK);
+
+        // Initialize timer for Player vs Player mode (5 minutes per player)
+        initializeTimer(5);
+
         notifyGameStateChanged();
     }
 
@@ -545,6 +552,20 @@ public final class ChessController implements MoveExecutor {
         for (PlayerPanelListener listener : playerPanelListeners) {
             listener.onTurnChanged(boardManager.getCurrentBoardState().getCurrentPlayerColor());
         }
+        // Switch timer when turn changes
+        switchTimer();
+    }
+
+    /**
+     * Notifies listeners of timer updates.
+     *
+     * @param color         the player's color
+     * @param timeRemaining remaining time in milliseconds
+     */
+    private void notifyTimerUpdate(PieceColor color, long timeRemaining) {
+        for (PlayerPanelListener listener : playerPanelListeners) {
+            listener.onTimerUpdate(color, timeRemaining);
+        }
     }
 
     /**
@@ -627,8 +648,89 @@ public final class ChessController implements MoveExecutor {
         if (blackPlayer != null) {
             blackPlayer.shutdown();
         }
+        if (chessTimer != null) {
+            chessTimer.stopAllTimers();
+        }
         actionManager.shutdown();
         logger.debug("Shutting down ChessController");
+    }
+
+    // --- Timer Management ---
+
+    /**
+     * Initializes the chess timer with specified minutes per player.
+     *
+     * @param minutes minutes per player
+     */
+    private void initializeTimer(int minutes) {
+        this.chessTimer = new ChessTimer(minutes);
+        this.timerEnabled = true;
+
+        // Add timer listener
+        chessTimer.addTimerListener(new ChessTimer.TimerListener() {
+            @Override
+            public void onTimeUpdate(PieceColor color, long timeRemaining) {
+                notifyTimerUpdate(color, timeRemaining);
+            }
+
+            @Override
+            public void onTimeOut(PieceColor color) {
+                handleTimeOut(color);
+            }
+        });
+
+        // Start white's timer
+        chessTimer.startTimer(PieceColor.WHITE);
+        logger.info("Timer initialized with {} minutes per player", minutes);
+    }
+
+    /**
+     * Switches the active timer when turn changes.
+     */
+    private void switchTimer() {
+        if (timerEnabled && chessTimer != null) {
+            PieceColor currentPlayer = boardManager.getCurrentBoardState().getCurrentPlayerColor();
+            chessTimer.startTimer(currentPlayer);
+        }
+    }
+
+    /**
+     * Handles time-out event when a player runs out of time.
+     *
+     * @param color the color of the player who ran out of time
+     */
+    private void handleTimeOut(PieceColor color) {
+        if (gameEnded) {
+            return;
+        }
+
+        gameEnded = true;
+        String winner = color.isWhite() ? "Black" : "White";
+        logger.info("{} player ran out of time. {} wins!", color, winner);
+
+        SwingUtilities.invokeLater(() -> {
+            GameOverDialog dialog = new GameOverDialog(frame, winner + " wins by timeout!");
+            dialog.setVisible(true);
+        });
+    }
+
+    /**
+     * Pauses the timer (used for undo/redo).
+     */
+    public void pauseTimer() {
+        if (timerEnabled && chessTimer != null) {
+            chessTimer.stopAllTimers();
+        }
+    }
+
+    /**
+     * Resumes the timer for current player.
+     */
+    public void resumeTimer() {
+        if (timerEnabled && chessTimer != null && !gameEnded) {
+            PieceColor currentPlayer = boardManager.getCurrentBoardState().getCurrentPlayerColor();
+            chessTimer.startTimer(currentPlayer);
+        }
     }
 
     // --- Getters and Setters ---

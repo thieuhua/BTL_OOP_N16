@@ -76,9 +76,11 @@ public class GameActionManager {
             return;
         }
 
+        controller.pauseTimer();
         BoardState previousState = historyManager.getUndoStack().pop();
         restoreBoardState(previousState, true);
         controller.notifyHistoryChangeListeners();
+        controller.resumeTimer();
         logger.info("Undo move performed, restored to previous state");
     }
 
@@ -93,9 +95,11 @@ public class GameActionManager {
         }
 
         try {
+            controller.pauseTimer();
             BoardState nextState = historyManager.getRedoStack().pop();
             restoreBoardState(nextState, false);
             controller.notifyHistoryChangeListeners();
+            controller.resumeTimer();
             logger.info("Redo performed, restored state");
         } catch (Exception e) {
             logger.error("Redo failed: {}", e.getMessage(), e);
@@ -112,6 +116,7 @@ public class GameActionManager {
             return;
         }
 
+        controller.pauseTimer();
         controller.setGameEnded(true);
         String currentPlayerColor = controller.getBoardManager().getCurrentBoardState().getCurrentPlayerColor().toString();
         String winner = controller.getBoardManager().getCurrentBoardState().getCurrentPlayerColor().isWhite() ? "Black" : "White";
