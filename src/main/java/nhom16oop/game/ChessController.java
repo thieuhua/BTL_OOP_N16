@@ -7,8 +7,10 @@ import nhom16oop.core.model.ChessMove;
 import nhom16oop.core.model.ChessPiece;
 import nhom16oop.core.model.ChessPosition;
 import nhom16oop.core.pieces.*;
+import nhom16oop.history.FileManager;
 import nhom16oop.history.GameHistoryManager;
 import nhom16oop.history.HistoryChangeListener;
+import nhom16oop.history.GameSave;
 import nhom16oop.players.HumanPlayer;
 import nhom16oop.players.Player;
 import nhom16oop.players.StockfishPlayer;
@@ -82,6 +84,8 @@ public final class ChessController implements MoveExecutor {
         setupInitialPosition();
         boardManager.updateBoardStateHistory();
     }
+
+    
 
     // --- Game Setup Methods ---
 
@@ -814,6 +818,61 @@ public final class ChessController implements MoveExecutor {
         if (timerEnabled && chessTimer != null && !gameEnded) {
             PieceColor currentPlayer = boardManager.getCurrentBoardState().getCurrentPlayerColor();
             chessTimer.startTimer(currentPlayer);
+        }
+    }
+
+    
+
+
+    // // --- Simple save helper: automatic name
+    public boolean saveCurrentGame() {
+        try {
+            // if (historyManager == null) {
+            //     logger.warn("HistoryManager is null; cannot save");
+            //     return false;
+            // }
+
+            // Build a GameSave object (you may change fields as needed)
+            GameSave save = GameSave.fromController(this); // implement static helper in GameSave
+            FileManager.save(save);
+            logger.info("Game saved to history (auto name)");
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to save game: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    // --- Save with explicit name
+    public boolean saveCurrentGame(String name) {
+        try {
+            if (historyManager == null) {
+                logger.warn("HistoryManager is null; cannot save");
+                return false;
+            }
+            GameSave save = GameSave.fromController(this);
+            save.setName(name);
+            FileManager.save(save);
+            logger.info("Game saved to history as '{}'", name);
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to save game: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    // Minimal load helper (returns boolean success)
+    public boolean loadLatestSavedGameAndApply() {
+        try {
+            if (historyManager == null) return false;
+            GameSave latest = FileManager.loadLatest();
+            if (latest == null) return false;
+            // apply board state, history, moves, etc.
+            latest.applyToController(this); // implement in GameSave
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to load saved game: {}", ex.getMessage(), ex);
+            return false;
         }
     }
 

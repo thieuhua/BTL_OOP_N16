@@ -57,6 +57,73 @@ public class ChessToolbar extends JPanel implements GameStateListener {
     }
 
     private void initializeButtonConfigs() {
+        // --- NEW: Back button (save -> close -> launch launcher)
+        buttonConfigs.add(new ButtonConfig("Back", "images/left-arrow.png", e -> {
+            Frame parent = (Frame) SwingUtilities.getWindowAncestor(this);
+            int choice = JOptionPane.showOptionDialog(parent,
+                    "Do you want to save the current game before returning to launcher?",
+                    "Return to Launcher",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    new String[]{"Save & Return", "Return without Saving", "Cancel"},
+                    "Save & Return");
+
+            if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) {
+                return;
+            }
+
+            // If user chose to save
+            if (choice == JOptionPane.YES_OPTION) {
+                boolean saved = false;
+                try {
+                    // TODO: phai fix doan nay
+                    // prefer controller-level save API (implement if missing)
+                    // saved = chessController.saveCurrentGameToHistory();
+                } catch (Throwable ex) {
+                    logger.warn("Save via chessController failed: {}", ex.getMessage(), ex);
+                }
+
+                if (!saved) {
+                    // fallback: ask user for filename and try saving FEN (if controller supports)
+                    String filename = JOptionPane.showInputDialog(parent, "Save failed or not supported automatically.\nEnter save name:", "Save Game", JOptionPane.PLAIN_MESSAGE);
+                    if (filename != null && !filename.trim().isEmpty()) {
+                        try {
+                            // TODO phai them api nay
+                            // saved = chessController.saveCurrentGameToHistory(filename.trim());
+                        } catch (Throwable ex) {
+                            logger.error("Fallback save failed: {}", ex.getMessage(), ex);
+                            JOptionPane.showMessageDialog(parent, "Save failed: " + ex.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                    } else {
+                        // user cancelled filename => abort going back
+                        return;
+                    }
+                }
+            }
+
+            // Finally close game UI and launch launcher
+            SwingUtilities.invokeLater(() -> {
+                Window win = SwingUtilities.getWindowAncestor(this);
+                if (win != null) {
+                    win.dispose();
+                }
+                // Launch a fresh launcher (ChessLauncher.launch() should show launcher dialog)
+                // We call this on EDT to be safe
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    try {
+                        nhom16oop.game.ChessLauncher.launch();
+                    } catch (Exception ex) {
+                        logger.error("Failed to relaunch ChessLauncher: {}", ex.getMessage(), ex);
+                        JOptionPane.showMessageDialog(null, "Unable to open launcher: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            });
+
+        }, () -> true));
+
+        // existing buttons...
         buttonConfigs.add(new ButtonConfig("Flip Board", "images/flip-board.png", e -> boardUI.flipBoard(), () -> true));
 
         buttonConfigs.add(new ButtonConfig("Resign", "images/resign.png", e -> {
@@ -104,7 +171,7 @@ public class ChessToolbar extends JPanel implements GameStateListener {
 
     private JButton createButton(ButtonConfig config) {
         Image iconImage = ImageLoader.getImage(config.iconPath, ICON_SIZE, ICON_SIZE);
-        JButton button = new JButton(new ImageIcon(iconImage));
+        JButton button = new JButton(iconImage != null ? new ImageIcon(iconImage) : new JButton(config.tooltip).getIcon());
         button.setToolTipText(config.tooltip);
         button.setBackground(BACKGROUND_COLOR);
         button.setBorder(BorderFactory.createEmptyBorder(BORDER_SIZE, BORDER_SIZE, BORDER_SIZE, BORDER_SIZE));

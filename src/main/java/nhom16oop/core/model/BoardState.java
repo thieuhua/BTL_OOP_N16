@@ -1,9 +1,12 @@
 package nhom16oop.core.model;
 
 import nhom16oop.constants.PieceColor;
+import nhom16oop.core.pieces.Bishop;
 import nhom16oop.core.pieces.ChessPieceMap;
 import nhom16oop.core.pieces.King;
+import nhom16oop.core.pieces.Knight;
 import nhom16oop.core.pieces.Pawn;
+import nhom16oop.core.pieces.Queen;
 import nhom16oop.core.pieces.Rook;
 import nhom16oop.utils.ChessNotationUtils;
 
@@ -62,6 +65,48 @@ public final class BoardState {
             this.blackCanCastleKingside = blackKing.canCastleKingside(blackKingPosition, chessPieceMap);
             this.blackCanCastleQueenside = blackKing.canCastleQueenside(blackKingPosition, chessPieceMap);
         }
+    }
+
+    public  BoardState(String FEN) {
+        this.chessPieceMap = new ChessPieceMap();
+
+        String[] parts = FEN.split(" ");
+        if (parts.length < 4) {
+            throw new IllegalArgumentException("Invalid FEN string: " + FEN);
+        }
+        
+        // Parse piece positions (part 1)
+        String[] ranks = parts[0].split("/");
+        for (int rank = 0; rank < 8; rank++) {
+            int col = 0;
+            String rankStr = ranks[7 - rank]; // FEN từ rank 8 xuống rank 1
+            
+            for (char c : rankStr.toCharArray()) {
+                if (Character.isDigit(c)) {
+                    col += Character.getNumericValue(c);
+                } else {
+                    ChessPiece piece = createPieceFromFENChar(c);
+                    if (piece != null) {
+                        this.getChessPieceMap().setPiece(new ChessPosition(col, rank), piece);
+                    }
+                    col++;
+                }
+            }
+        }
+        
+        // Parse active color (part 2)
+        PieceColor activeColor = parts[1].equals("w") ? PieceColor.WHITE : PieceColor.BLACK;
+        this.setCurrentPlayerColor(activeColor);
+        
+        // Parse castling rights (part 3)
+        String castlingRights = parts[2];
+        this.whiteCanCastleKingside = castlingRights.contains("K");
+        this.whiteCanCastleQueenside = castlingRights.contains("Q");
+        this.blackCanCastleKingside = castlingRights.contains("k");
+        this.blackCanCastleQueenside = castlingRights.contains("q");
+        // En passant (part 4) sẽ tự động update sau move đầu tiên
+
+        
     }
 
     public ChessPieceMap getChessPieceMap() {
@@ -233,5 +278,21 @@ public final class BoardState {
         this.whiteCanCastleQueenside = other.whiteCanCastleQueenside;
         this.blackCanCastleKingside = other.blackCanCastleKingside;
         this.blackCanCastleQueenside = other.blackCanCastleQueenside;
+    }
+
+
+    public ChessPiece createPieceFromFENChar(char c) {
+        PieceColor color = Character.isUpperCase(c) ? PieceColor.WHITE : PieceColor.BLACK;
+        char piece = Character.toLowerCase(c);
+        
+        return switch (piece) {
+            case 'p' -> new Pawn(color, this);
+            case 'n' -> new Knight(color);
+            case 'b' -> new Bishop(color);
+            case 'r' -> new Rook(color);
+            case 'q' -> new Queen(color);
+            case 'k' -> new King(color);
+            default -> null;
+        };
     }
 }

@@ -54,7 +54,7 @@ public class ChessUI {
     }
 
     private void setupUI() {
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setResizable(false);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -114,7 +114,56 @@ public class ChessUI {
         frame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                // Ask user whether to save before quitting the application
+                int choice = JOptionPane.showConfirmDialog(frame,
+                        "Do you want to save the current game before quitting?",
+                        "Save before Quit",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) {
+                    // abort close
+                    // Because default close is DISPOSE, we need to cancel disposal.
+                    // to cancel, we do nothing here (window will not be disposed automatically until user confirms)
+                    // but to be safe, we can explicitly call setDefaultCloseOperation again
+                    frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                    return;
+                }
+
+                if (choice == JOptionPane.YES_OPTION) {
+                    boolean saved = false;
+                    try {
+                        saved = chessController.saveCurrentGame();
+                    } catch (Throwable ex) {
+                        // fallback or inform user
+                        logger.warn("Auto-save failed: {}", ex.getMessage(), ex);
+                        String filename = JOptionPane.showInputDialog(frame, "Auto-save failed. Enter save name:", "Save Game", JOptionPane.PLAIN_MESSAGE);
+                        if (filename != null && !filename.trim().isEmpty()) {
+                            try {
+                                saved = chessController.saveCurrentGame(filename.trim());
+                            } catch (Throwable ex2) {
+                                logger.error("Fallback save failed: {}", ex2.getMessage(), ex2);
+                                JOptionPane.showMessageDialog(frame, "Save failed: " + ex2.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);
+                                // abort quitting because save failed
+                                frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                                return;
+                            }
+                        } else {
+                            // user cancelled naming -> abort quit
+                            frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                            return;
+                        }
+                    }
+                }
+
+                // If we reach here, either user chose NO or save succeeded -> proceed to shutdown
+                logger.info("Shutting down chess controller and exiting app");
                 chessController.shutdown();
+                // allow disposal and exit
+                frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                // dispose and exit
+                frame.dispose();
+                System.exit(0);
             }
         });
     }
@@ -134,7 +183,7 @@ public class ChessUI {
         }
     }
 
-        /**
+    /**
      * Tạo panel hiển thị thông tin puzzle
      */
     private JPanel createPuzzleInfoPanel() {
