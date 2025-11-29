@@ -164,9 +164,6 @@ public class BoardManager {
     public Map<BoardState, Integer> getBoardStateHistory() {
         return boardStateHistory;
     }
-
-    // THÊM VÀO CUỐI CLASS BoardManager (trước dấu } cuối cùng)
-
     /**
      * Load board state từ FEN string
      */
@@ -188,7 +185,7 @@ public class BoardManager {
                 if (Character.isDigit(c)) {
                     col += Character.getNumericValue(c);
                 } else {
-                    ChessPiece piece = createPieceFromFENChar(c);
+                    ChessPiece piece = this.getCurrentBoardState().createPieceFromFENChar(c);
                     if (piece != null) {
                         setPiece(new ChessPosition(col, rank), piece);
                     }
@@ -205,23 +202,5 @@ public class BoardManager {
         // En passant (part 4) sẽ tự động update sau move đầu tiên
         
         logger.info("Board loaded from FEN: {}", fen);
-    }
-
-    /**
-     * Tạo ChessPiece từ ký tự FEN
-     */
-    private ChessPiece createPieceFromFENChar(char c) {
-        PieceColor color = Character.isUpperCase(c) ? PieceColor.WHITE : PieceColor.BLACK;
-        char piece = Character.toLowerCase(c);
-        
-        return switch (piece) {
-            case 'p' -> new Pawn(color, currentBoardState);
-            case 'n' -> new Knight(color);
-            case 'b' -> new Bishop(color);
-            case 'r' -> new Rook(color);
-            case 'q' -> new Queen(color);
-            case 'k' -> new King(color);
-            default -> null;
-        };
     }
 }

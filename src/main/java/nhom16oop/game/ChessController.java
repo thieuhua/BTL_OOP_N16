@@ -7,8 +7,10 @@ import nhom16oop.core.model.ChessMove;
 import nhom16oop.core.model.ChessPiece;
 import nhom16oop.core.model.ChessPosition;
 import nhom16oop.core.pieces.*;
+import nhom16oop.history.FileManager;
 import nhom16oop.history.GameHistoryManager;
 import nhom16oop.history.HistoryChangeListener;
+import nhom16oop.history.GameSave;
 import nhom16oop.players.HumanPlayer;
 import nhom16oop.players.Player;
 import nhom16oop.players.StockfishPlayer;
@@ -18,11 +20,14 @@ import nhom16oop.ui.board.ChessTile;
 import nhom16oop.ui.components.dialogs.GameOverDialog;
 import nhom16oop.ui.components.dialogs.PromotionDialog;
 import nhom16oop.utils.BoardUtils;
+import nhom16oop.utils.ChessNotationUtils;
 import nhom16oop.utils.SoundPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -82,6 +87,8 @@ public final class ChessController implements MoveExecutor {
         setupInitialPosition();
         boardManager.updateBoardStateHistory();
     }
+
+    
 
     // --- Game Setup Methods ---
 
@@ -815,6 +822,111 @@ public final class ChessController implements MoveExecutor {
             PieceColor currentPlayer = boardManager.getCurrentBoardState().getCurrentPlayerColor();
             chessTimer.startTimer(currentPlayer);
         }
+    }
+
+    
+
+
+    // // --- Simple save helper: automatic name
+    public boolean saveCurrentGame() {
+        try {
+            // if (historyManager == null) {
+            //     logger.warn("HistoryManager is null; cannot save");
+            //     return false;
+            // }
+
+            // Build a GameSave object (you may change fields as needed)
+            GameSave save = this.toGameSave(); // implement static helper in GameSave
+            FileManager.save(save);
+            logger.info("Game saved to history (auto name)");
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to save game: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    // --- Save with explicit name
+    public boolean saveCurrentGame(String name) {
+        try {
+            if (historyManager == null) {
+                logger.warn("HistoryManager is null; cannot save");
+                return false;
+            }
+            GameSave save = this.toGameSave();
+            save.setName(name);
+            FileManager.save(save);
+            logger.info("Game saved to history as '{}'", name);
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to save game: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    // Minimal load helper (returns boolean success)
+    public boolean loadLatestSavedGameAndApply() {
+        try {
+            if (historyManager == null) return false;
+            GameSave latest = FileManager.loadLatest();
+            if (latest == null) return false;
+            // apply board state, history, moves, etc.
+            this.applyFrom(latest);
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to load saved game: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    public GameSave toGameSave(){
+        GameSave s = new GameSave();
+        s.gameMode = this.getGameMode();
+        s.timestamp = Instant.now().toEpochMilli();
+        s.name = "save-" + s.timestamp;
+
+        s.chosenWhite = this.humanPlayerColor == PieceColor.WHITE;
+        try {
+            if (boardManager != null) {
+                BoardState state = boardManager.getCurrentBoardState();
+                s.fen = ChessNotationUtils.getFEN(state);
+            }
+            // if (controller.getHistoryManager() != null) {
+            //     s.movesSerialized = controller.getHistoryManager().serializeCurrentHistory();
+            // }
+        } catch (Exception ex) {
+            // best-effort
+        }
+        s.whiteTimeRemaining = chessTimer.getTimeRemaining(PieceColor.WHITE);
+        s.blackTimeRemaining = chessTimer.getTimeRemaining(PieceColor.BLACK);
+        return s;
+    }
+    public void applyFrom(GameSave gameSave) {
+        String FEN = gameSave.fen;
+        // apply fen and moves to controller
+        this.humanPlayerColor = gameSave.chosenWhite ? PieceColor.WHITE : PieceColor.BLACK;
+        try {
+            logger.info("try apply FEN: {}", FEN);
+            if (FEN != null && !FEN.isEmpty()) {
+                boardManager.getCurrentBoardState().setFromFEN(FEN); // implement loadFromFEN if missing
+                // notifyTurnChanged();
+                if (boardUI != null) {
+                    boardUI.clear();
+                    boardUI.repaintPieces();
+                    boardUI.updateBoardUI();
+                }
+            }
+            chessTimer.setTimeRemaining(PieceColor.WHITE, gameSave.whiteTimeRemaining);
+            chessTimer.setTimeRemaining(PieceColor.BLACK, gameSave.blackTimeRemaining);
+            // if (movesSerialized != null && !movesSerialized.isEmpty() && controller.getHistoryManager() != null) {
+            //     controller.getHistoryManager().loadFromSerialized(movesSerialized);
+            // }
+
+        } catch (Exception ex) {
+            // ignore or log
+            logger.error("Failed to apply saved game data: {}", ex.getMessage(), ex);
+        }
+        
     }
 
     // --- Getters and Setters ---

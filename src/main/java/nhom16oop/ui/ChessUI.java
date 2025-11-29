@@ -4,6 +4,7 @@ import nhom16oop.constants.GameMode;
 import nhom16oop.constants.PieceColor;
 import nhom16oop.game.ChessBoard;
 import nhom16oop.game.ChessController;
+import nhom16oop.history.GameSave;
 import nhom16oop.ui.components.panels.ChessToolbar;
 import nhom16oop.ui.components.panels.MoveHistoryPanel;
 import nhom16oop.ui.components.panels.PlayerPanel;
@@ -34,6 +35,34 @@ public class ChessUI {
         chessController.setFrame(frame);
         setupUI();
     }
+public ChessUI(GameSave gameSave) {
+    // tạo controller sạch
+    this.chessController = new ChessController();
+
+    // 1) Thiết lập chế độ trước khi áp state (giống configureGame)
+    PieceColor selectedColor = gameSave.chosenWhite ? PieceColor.WHITE : PieceColor.BLACK;
+    switch (gameSave.gameMode) {
+        case GameMode.PLAYER_VS_PLAYER -> this.chessController.setPlayerVsPlayer();
+        case GameMode.PLAYER_VS_AI -> this.chessController.setPlayerVsAI(selectedColor);
+        default -> this.chessController.setPlayerVsPlayer();
+    }
+
+    // 2) Áp state (board, fen, v.v.) vào controller trước khi tạo UI
+    this.chessController.applyFrom(gameSave);
+
+    // 3) Tạo frame + UI sau khi controller đã có state đúng
+    this.frame = new JFrame("Chess Game");
+    chessController.setFrame(frame);
+    setupUI();
+
+    // 4) Sau khi UI được tạo, ép UI đồng bộ hoàn toàn với boardManager
+    if (chessController.getBoardUI() != null) {
+        chessController.getBoardUI().clear();          // sạch các highlight/state cũ
+        chessController.getBoardUI().repaintPieces(); // set piece theo boardManager
+        chessController.getBoardUI().updateBoardUI(); // highlight last move, hints
+    }
+}
+
 
 
 /**
@@ -43,18 +72,19 @@ public class ChessUI {
         this.chessController = new ChessController();
         
         if (gameMode == GameMode.PUZZLE_MODE) {
+            this.frame = new JFrame("Chess Game - Puzzle Mode");
             chessController.setPuzzleMode(puzzleFEN, maxMoves);
         } else {
+            this.frame = new JFrame("Chess Game");
             configureGame(this.chessController, gameMode, selectedColor);
         }
         
-        this.frame = new JFrame("Chess Game - Puzzle Mode");
         chessController.setFrame(frame);
         setupUI();
     }
 
     private void setupUI() {
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setResizable(false);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -114,7 +144,56 @@ public class ChessUI {
         frame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                // Ask user whether to save before quitting the application
+                int choice = JOptionPane.showConfirmDialog(frame,
+                        "Do you want to save the current game before quitting?",
+                        "Save before Quit",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+
+                if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) {
+                    // abort close
+                    // Because default close is DISPOSE, we need to cancel disposal.
+                    // to cancel, we do nothing here (window will not be disposed automatically until user confirms)
+                    // but to be safe, we can explicitly call setDefaultCloseOperation again
+                    frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                    return;
+                }
+
+                if (choice == JOptionPane.YES_OPTION) {
+                    boolean saved = false;
+                    try {
+                        saved = chessController.saveCurrentGame();
+                    } catch (Throwable ex) {
+                        // fallback or inform user
+                        logger.warn("Auto-save failed: {}", ex.getMessage(), ex);
+                        String filename = JOptionPane.showInputDialog(frame, "Auto-save failed. Enter save name:", "Save Game", JOptionPane.PLAIN_MESSAGE);
+                        if (filename != null && !filename.trim().isEmpty()) {
+                            try {
+                                saved = chessController.saveCurrentGame(filename.trim());
+                            } catch (Throwable ex2) {
+                                logger.error("Fallback save failed: {}", ex2.getMessage(), ex2);
+                                JOptionPane.showMessageDialog(frame, "Save failed: " + ex2.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);
+                                // abort quitting because save failed
+                                frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                                return;
+                            }
+                        } else {
+                            // user cancelled naming -> abort quit
+                            frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                            return;
+                        }
+                    }
+                }
+
+                // If we reach here, either user chose NO or save succeeded -> proceed to shutdown
+                logger.info("Shutting down chess controller and exiting app");
                 chessController.shutdown();
+                // allow disposal and exit
+                frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                // dispose and exit
+                frame.dispose();
+                System.exit(0);
             }
         });
     }
@@ -134,7 +213,7 @@ public class ChessUI {
         }
     }
 
-        /**
+    /**
      * Tạo panel hiển thị thông tin puzzle
      */
     private JPanel createPuzzleInfoPanel() {

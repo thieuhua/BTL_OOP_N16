@@ -42,6 +42,14 @@ public class ChessTimer {
         initializeTimers();
         logger.info("ChessTimer initialized with {} minutes per player", initialMinutes);
     }
+    // public ChessTimer(long initialTime, long whiteTimeRemaining, long blackTimeRemaining) {
+    //     this.initialTime = initialTime;
+    //     this.isWhiteTimerRunning = false;
+    //     this.isBlackTimerRunning = false;
+
+    //     initializeTimers();
+    //     logger.info("ChessTimer initialized with {} ms total, white: {} ms, black: {} ms", initialTime, whiteTimeRemaining, blackTimeRemaining);
+    // }
 
     private void initializeTimers() {
         // Timer updates every 100ms for smooth display
@@ -148,6 +156,13 @@ public class ChessTimer {
     public long getTimeRemaining(PieceColor color) {
         return color.isWhite() ? whiteTimeRemaining : blackTimeRemaining;
     }
+    public void setTimeRemaining(PieceColor color, long timeMs) {
+        if (color.isWhite()) {
+            this.whiteTimeRemaining = timeMs;
+        } else {
+            this.blackTimeRemaining = timeMs;
+        }
+    }
 
     /**
      * Formats time in milliseconds to MM:SS format.
@@ -207,10 +222,10 @@ public class ChessTimer {
         });
     }
 
-    /**
-     * Listener interface for timer events.
-     */
-    public interface TimerListener {
+/**
+ * Listener interface for timer events.
+ */
+public interface TimerListener {
         /**
          * Called when time is updated.
          *

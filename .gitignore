@@ -34,3 +34,4 @@ config.properties
 
 
 commit-message.md
+/saves/*.json
