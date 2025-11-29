@@ -1,10 +1,6 @@
 package nhom16oop.history;
 
-import nhom16oop.core.model.BoardState;
-import nhom16oop.game.ChessController;
-import nhom16oop.utils.ChessNotationUtils;
 
-import java.time.Instant;
 
 public class GameSave {
     // private String id;

@@ -129,7 +129,7 @@ public class ChessToolbar extends JPanel implements GameStateListener {
             if (dialog.isConfirmed()) {
                 actionManager.resignGame();
             }
-        }, () -> chessController.getGameMode() != GameMode.PUZZLE_MODE && !chessController.isGameEnded()));
+        }, () -> !chessController.isGameEnded()));
 
         buttonConfigs.add(new ButtonConfig("Show hint", "images/hint.png", e -> actionManager.showHint(), () -> chessController.getGameMode() == GameMode.PLAYER_VS_AI && !chessController.isGameEnded()));
 

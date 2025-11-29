@@ -102,6 +102,8 @@ public final class ChessController implements MoveExecutor {
 
         // Initialize timer for Player vs Player mode (5 minutes per player)
         initializeTimer(5);
+        // Timer is visible by default in Player vs Player mode
+        setTimerVisible(true);
 
         notifyGameStateChanged();
     }
@@ -121,6 +123,7 @@ public final class ChessController implements MoveExecutor {
             this.whitePlayer = new StockfishPlayer(this, PieceColor.WHITE);
             this.blackPlayer = new HumanPlayer(this, PieceColor.BLACK);
         }
+
         notifyGameStateChanged();
         if (humanColor.isBlack()) {
             whitePlayer.makeMove();
@@ -159,7 +162,8 @@ public final class ChessController implements MoveExecutor {
             this.whitePlayer = new StockfishPlayer(this, PieceColor.WHITE);
             this.blackPlayer = new HumanPlayer(this, PieceColor.BLACK);
         }
-        
+
+
         notifyGameStateChanged();
         
         // Nếu AI đi trước, trigger move
@@ -613,7 +617,7 @@ public final class ChessController implements MoveExecutor {
     }
 
     /**
-     * Notifies listeners of timer updates.
+     * Notifies listeners when timer is updated.
      *
      * @param color         the player's color
      * @param timeRemaining remaining time in milliseconds
@@ -621,6 +625,17 @@ public final class ChessController implements MoveExecutor {
     private void notifyTimerUpdate(PieceColor color, long timeRemaining) {
         for (PlayerPanelListener listener : playerPanelListeners) {
             listener.onTimerUpdate(color, timeRemaining);
+        }
+    }
+
+    /**
+     * Notifies listeners when timer visibility changes.
+     *
+     * @param visible true if timer should be visible, false otherwise
+     */
+    private void notifyTimerVisibilityChanged(boolean visible) {
+        for (PlayerPanelListener listener : playerPanelListeners) {
+            listener.onTimerVisibilityChanged(visible);
         }
     }
 
@@ -645,7 +660,6 @@ public final class ChessController implements MoveExecutor {
 
         // === PUZZLE MODE CHECKS ===
         if (gameMode == GameMode.PUZZLE_MODE) {
-            BoardState currentBoardState = boardManager.getCurrentBoardState();
             PieceColor opponentColor = humanPlayerColor.getOpponent();
             
             // Kiểm tra chiếu hết đối thủ (THẮNG)
@@ -767,6 +781,11 @@ public final class ChessController implements MoveExecutor {
             @Override
             public void onTimeOut(PieceColor color) {
                 handleTimeOut(color);
+            }
+
+            @Override
+            public void onVisibilityChanged(boolean visible) {
+                notifyTimerVisibilityChanged(visible);
             }
         });
 
@@ -927,6 +946,34 @@ public final class ChessController implements MoveExecutor {
             logger.error("Failed to apply saved game data: {}", ex.getMessage(), ex);
         }
         
+    }
+
+    /**
+     * Sets the timer visibility.
+     *
+     * @param visible true to show timer, false to hide
+     */
+    public void setTimerVisible(boolean visible) {
+        if (chessTimer != null) {
+            chessTimer.setTimerVisible(visible);
+        }
+    }
+
+    /**
+     * Hides timer UI directly without initializing ChessTimer.
+     * Use this when you want to completely disable timer (no logic, no UI).
+     */
+    public void hideTimerUI() {
+        notifyTimerVisibilityChanged(false);
+    }
+
+    /**
+     * Gets the timer visibility state.
+     *
+     * @return true if timer is visible, false otherwise
+     */
+    public boolean isTimerVisible() {
+        return chessTimer != null && chessTimer.isTimerVisible();
     }
 
     // --- Getters and Setters ---

@@ -1,7 +1,6 @@
 package nhom16oop.ui.board;
 
 import nhom16oop.constants.GameConstants;
-import nhom16oop.constants.GameMode;
 import nhom16oop.core.model.ChessMove;
 import nhom16oop.core.model.ChessPiece;
 import nhom16oop.core.model.ChessPosition;

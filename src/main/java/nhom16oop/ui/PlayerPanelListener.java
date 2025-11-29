@@ -11,4 +11,6 @@ public interface PlayerPanelListener {
     void onTurnChanged(PieceColor currentPlayerColor);
 
     void onTimerUpdate(PieceColor color, long timeRemaining);
+
+    void onTimerVisibilityChanged(boolean visible);
 }

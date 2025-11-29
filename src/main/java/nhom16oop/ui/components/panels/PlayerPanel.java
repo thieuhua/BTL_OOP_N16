@@ -127,6 +127,11 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
         }
     }
 
+    @Override
+    public void onTimerVisibilityChanged(boolean visible) {
+        SwingUtilities.invokeLater(() -> setTimerVisible(visible));
+    }
+
     public void addCapturedPiece(ChessPiece piece) {
         capturedPieces.merge(piece, 1, Integer::sum);
         updateCapturedPiecesDisplay();
@@ -203,6 +208,15 @@ public class PlayerPanel extends JPanel implements PlayerPanelListener {
                 timerLabel.setForeground(Color.WHITE);
             }
         }
+    }
+
+    /**
+     * Sets the visibility of the timer label.
+     *
+     * @param visible true to show timer, false to hide
+     */
+    public void setTimerVisible(boolean visible) {
+        timerLabel.setVisible(visible);
     }
 
     /**
