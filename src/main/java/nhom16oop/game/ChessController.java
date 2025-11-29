@@ -660,7 +660,6 @@ public final class ChessController implements MoveExecutor {
 
         // === PUZZLE MODE CHECKS ===
         if (gameMode == GameMode.PUZZLE_MODE) {
-            BoardState currentBoardState = boardManager.getCurrentBoardState();
             PieceColor opponentColor = humanPlayerColor.getOpponent();
             
             // Kiểm tra chiếu hết đối thủ (THẮNG)
