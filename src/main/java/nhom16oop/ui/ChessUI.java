@@ -146,7 +146,7 @@ public class ChessUI {
         panel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
         
         // Title label
-        JLabel titleLabel = new JLabel("🧩 PUZZLE MODE", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel( "PUZZLE MODE", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Georgia", Font.BOLD, 22));
         titleLabel.setForeground(new Color(255, 215, 0));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -158,7 +158,7 @@ public class ChessUI {
         movesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // Objective label
-        JLabel objectiveLabel = new JLabel("🎯 Mục tiêu: Chiếu hết đối thủ!", SwingConstants.CENTER);
+        JLabel objectiveLabel = new JLabel("Objective: Checkmate the opponent!", SwingConstants.CENTER);
         objectiveLabel.setFont(new Font("Roboto", Font.PLAIN, 14));
         objectiveLabel.setForeground(new Color(245, 245, 220));
         objectiveLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -178,7 +178,7 @@ public class ChessUI {
                 int total = chessController.getPuzzleMaxMoves();
                 int current = chessController.getPuzzleCurrentMoves();
                 
-                movesLabel.setText(String.format("Đã đi: %d/%d  |  Còn lại: %d nước", 
+                movesLabel.setText(String.format("Moves played: %d/%d  | Remaining: %d moves", 
                                                 current, total, remaining));
                 
                 // Đổi màu warning khi sắp hết
@@ -198,7 +198,7 @@ public class ChessUI {
         SwingUtilities.invokeLater(() -> {
             int remaining = chessController.getPuzzleRemainingMoves();
             int total = chessController.getPuzzleMaxMoves();
-            movesLabel.setText(String.format("Đã đi: 0/%d  |  Còn lại: %d nước", total, remaining));
+            movesLabel.setText(String.format("Moves played: 0/%d  |  Remaining: %d moves", total, remaining));
         });
         
         return panel;

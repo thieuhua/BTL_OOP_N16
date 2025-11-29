@@ -648,7 +648,7 @@ public final class ChessController implements MoveExecutor {
                 SwingUtilities.invokeLater(() -> {
                     GameOverDialog dialog = new GameOverDialog(
                         frame, 
-                        "Chúc mừng! Bạn đã giải xong puzzle!");
+                        "Congratulations! You have solved the puzzle!");
                     dialog.setVisible(true);
                 });
                 logger.info("Puzzle completed: Checkmate achieved in {} moves", puzzleCurrentMoves);
@@ -662,7 +662,7 @@ public final class ChessController implements MoveExecutor {
                 SwingUtilities.invokeLater(() -> {
                     GameOverDialog dialog = new GameOverDialog(
                         frame, 
-                        "Thất bại! Hết " + puzzleMaxMoves + " nước đi mà chưa chiếu hết đối thủ.");
+                        "Defeat! Out of " + puzzleMaxMoves + " moves without checkmating the opponent.");
                     dialog.setVisible(true);
                 });
                 logger.info("Puzzle failed: Out of moves ({}/{})", puzzleCurrentMoves, puzzleMaxMoves);

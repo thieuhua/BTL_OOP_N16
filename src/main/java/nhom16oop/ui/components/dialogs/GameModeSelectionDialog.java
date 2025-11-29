@@ -192,29 +192,29 @@ public class GameModeSelectionDialog extends JDialog {
     private void showInlinePuzzleSelection() {
         // Định nghĩa các puzzle mẫu (bạn có thể mở rộng hoặc load từ file)
         Object[][] puzzles = {
-            {"Puzzle 1 - Dễ", 
+            {"Puzzle 1 -Easy", 
             "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", 
             3},
-            {"Puzzle 2 - Trung bình", 
+            {"Puzzle 2 - Normal", 
             "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 5", 
             5},
-            {"Puzzle 3 - Khó", 
+            {"Puzzle 3 - Hard", 
             "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 8", 
             7},
-            {"Puzzle 4 - Rất khó",
+            {"Puzzle 4 - Very Hard",
             "r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 0 9",
             8}
         };
         
         String[] options = new String[puzzles.length];
         for (int i = 0; i < puzzles.length; i++) {
-            options[i] = puzzles[i][0] + " (" + puzzles[i][2] + " nước)";
+            options[i] = puzzles[i][0] + " (" + puzzles[i][2] + " moves)";
         }
         
         String choice = (String) JOptionPane.showInputDialog(
             this,
-            "Chọn Puzzle để giải:",
-            "Chọn Puzzle",
+            "Choose a Puzzle to Solve:",
+            "Choose Puzzle",
             JOptionPane.QUESTION_MESSAGE,
             null,
             options,
