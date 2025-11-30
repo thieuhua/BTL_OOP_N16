@@ -190,20 +190,17 @@ public class GameModeSelectionDialog extends JDialog {
      * Hiển thị dialog chọn puzzle
      */
     private void showInlinePuzzleSelection() {
-        // Define sample puzzles (can be expanded or loaded from file)
+        // Định nghĩa các puzzle mẫu (bạn có thể mở rộng hoặc load từ file)
         Object[][] puzzles = {
-            {"Puzzle 1 - Easy",
-            "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
+            {"Puzzle 1 - Mate in 3 moves", 
+            "2rkr3/p3b1pp/1np1Qnb1/2N5/3P2P1/7P/PPPB1P2/R5K1 w - - 0 1", 
             3},
-            {"Puzzle 2 - Medium",
-            "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 5",
-            5},
-            {"Puzzle 3 - Hard",
-            "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 8",
-            7},
-            {"Puzzle 4 - Expert",
-            "r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 0 9",
-            8}
+            {"Puzzle 2 - Mate in 4 moves - Intermediate", 
+            "6k1/Npp2pp1/n2p3p/4r1r1/1PBNpK1R/2P1P3/P2P2P1/R1B5 b - - 0 1", 
+            4},
+            {"Puzzle 3 - Mate in 4 moves - Easy",
+            "2kr3r/pp3R1p/2bQp3/2p1P3/4pP2/1PP1P3/P2K4/R1B4q w - - 0 1",
+            4}
         };
         
         String[] options = new String[puzzles.length];
@@ -213,7 +210,7 @@ public class GameModeSelectionDialog extends JDialog {
         
         String choice = (String) JOptionPane.showInputDialog(
             this,
-            "Select a puzzle to solve:",
+            "Choose a Puzzle to Solve:",
             "Choose Puzzle",
             JOptionPane.QUESTION_MESSAGE,
             null,
