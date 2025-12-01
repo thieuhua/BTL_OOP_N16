@@ -10,13 +10,16 @@
 1. [Modify Nước Đi Của Quân Cờ](#1-modify-nước-đi-của-quân-cờ)
 2. [Modify Timer (Đồng Hồ Đếm Giờ)](#2-modify-timer-đồng-hồ-đếm-giờ)
 3. [Save/Load Game (Lưu Và Tải Game)](#3-saveload-game-lưu-và-tải-game)
-4. [Modify Kích Thước Bàn Cờ](#4-modify-kích-thước-bàn-cờ)
-5. [Modify Toolbar (Các Nút Chức Năng)](#5-modify-toolbar-các-nút-chức-năng)
-6. [Modify Âm Thanh](#6-modify-âm-thanh)
-7. [Modify Giá Trị Quân Cờ](#7-modify-giá-trị-quân-cờ)
-8. [Hiểu Về Logic Chiếu Tướng Và Ăn Quân](#8-hiểu-về-logic-chiếu-tướng-và-ăn-quân)
-9. [Thông Tin Bổ Sung Về Cấu Trúc UI](#9-thông-tin-bổ-sung-về-cấu-trúc-ui)
-10. [Những Điều Cần Biết Khi Báo Cáo](#10-những-điều-cần-biết-khi-báo-cáo)
+4. [Hiểu Về Cấu Trúc Dữ Liệu Cơ Bản (ChessPosition & ChessMove)](#3b-hiểu-về-cấu-trúc-dữ-liệu-cơ-bản-chessposition--chessmove)
+5. [Modify Các Tham Số Game (GameConstants)](#4-modify-các-tham-số-game-gameconstants)
+6. [Modify Các Luật Cờ Vua (BoardState)](#4b-modify-các-luật-cờ-vua-boardstate)
+7. [Modify Logic Kiểm Tra Nước Đi (ChessPiece)](#5-modify-logic-kiểm-tra-nước-đi-chesspiece)
+8. [Modify Toolbar (Các Nút Chức Năng)](#6-modify-toolbar-các-nút-chức-năng)
+9. [Modify Âm Thanh](#7-modify-âm-thanh)
+10. [Modify Giá Trị Quân Cờ](#8-modify-giá-trị-quân-cờ)
+11. [Hiểu Về Logic Chiếu Tướng Và Ăn Quân](#9-hiểu-về-logic-chiếu-tướng-và-ăn-quân)
+12. [Thông Tin Bổ Sung Về Cấu Trúc UI](#10-thông-tin-bổ-sung-về-cấu-trúc-ui)
+13. [Những Điều Cần Biết Khi Báo Cáo](#11-những-điều-cần-biết-khi-báo-cáo)
 
 ---
 
@@ -300,33 +303,617 @@ BTL_OOP_N16/
 
 ---
 
-## 4. MODIFY KÍCH THƯỚC BÀN CỜ
+## 3B. HIỂU VỀ CẤU TRÚC DỮ LIỆU CƠ BẢN (CHESSPOSITION & CHESSMOVE)
+
+### Mức độ: CHỈ ĐỌC ĐỂ HIỂU - TUYỆT ĐỐI KHÔNG NÊN SỬA
+
+**File**: 
+- `src/main/java/nhom16oop/core/model/ChessPosition.java` (Vị trí trên bàn cờ)
+- `src/main/java/nhom16oop/core/model/ChessMove.java` (Nước đi)
+
+### A. CHESSPOSITION - ĐẠI DIỆN CHO 1 Ô TRÊN BÀN CỜ
+
+#### **Định nghĩa:**
+```java
+public record ChessPosition(int col, int row)
+// col: 0-7 (a-h), row: 0-7 (rank 1-8)
+```
+
+#### **Chức năng chính:**
+
+**1. Chuyển đổi giữa ký hiệu cờ vua và tọa độ:**
+```java
+ChessPosition pos = ChessPosition.get("e4");       // "e4" → ChessPosition(4, 3)
+String notation = pos.toChessNotation();           // ChessPosition(4, 3) → "e4"
+```
+
+**2. Validation tự động:**
+- Chỉ chấp nhận vị trí trong bàn cờ 8x8
+- Throw `InvalidPositionException` nếu vị trí không hợp lệ
+
+**3. Cache Pattern:**
+- Tạo sẵn 64 object cho tất cả ô a1→h8
+- Không tạo object mới mỗi lần gọi → tiết kiệm bộ nhớ
+
+**4. Chuyển đổi hệ tọa độ Matrix (cho UI):**
+```java
+int matrixRow = position.matrixRow();  // Đảo ngược: Rank 8 → Row 0, Rank 1 → Row 7
+```
+
+#### **Được sử dụng ở đâu:**
+- **ChessMove**: Lưu vị trí start và end
+- **ChessPieceMap**: Key của Map<ChessPosition, ChessPiece>
+- **Các quân cờ**: Tính toán vị trí mới khi di chuyển
+- **UI**: Mỗi ô ChessTile có 1 ChessPosition
+
+### B. CHESSMOVE - ĐẠI DIỆN CHO 1 NƯỚC ĐI
+
+#### **Định nghĩa:**
+```java
+public record ChessMove(ChessPosition start, ChessPosition end)
+```
+
+#### **Chức năng chính:**
+
+**1. Lưu trữ nước đi:**
+- `start`: Vị trí ban đầu của quân cờ
+- `end`: Vị trí đích sau khi di chuyển
+
+**2. Chuyển đổi sang ký hiệu:**
+```java
+ChessMove move = new ChessMove(e2, e4);
+String notation = move.moveNotation();  // "e2e4"
+```
+
+#### **Được sử dụng ở đâu:**
+- **Các quân cờ**: `generateValidMoves()` trả về `List<ChessMove>`
+- **ChessPiece**: `isValidMove(ChessMove move)` kiểm tra hợp lệ
+- **BoardUtils**: Mô phỏng nước đi, kiểm tra chiếu vua
+- **UI**: Highlight các ô có thể di chuyển
+- **Stockfish AI**: Parse nước đi từ engine
+
+### C. MỐI QUAN HỆ GIỮA CHESSPOSITION VÀ CHESSMOVE
+
+```
+ChessPosition (1 ô trên bàn cờ)
+    ↓
+    Được sử dụng bởi
+    ↓
+ChessMove (1 nước đi = 2 ChessPosition)
+```
+
+**So sánh:**
+
+| **Đặc điểm** | **ChessPosition** | **ChessMove** |
+|-------------|-------------------|---------------|
+| **Đại diện** | 1 ô trên bàn cờ | 1 nước đi |
+| **Dữ liệu** | `(col, row)` | `(start, end)` |
+| **Ví dụ** | `e4` | `e2→e4` |
+| **Số lượng** | 64 (a1→h8) | Vô hạn |
+
+**Ví dụ cụ thể:**
+```java
+// TẠO VỊ TRÍ
+ChessPosition e2 = ChessPosition.get("e2");  // Cột 4, hàng 1
+ChessPosition e4 = ChessPosition.get("e4");  // Cột 4, hàng 3
+
+// TẠO NƯỚC ĐI
+ChessMove move = new ChessMove(e2, e4);      // Di chuyển từ e2 đến e4
+
+// Quân cờ tạo danh sách nước đi
+List<ChessMove> moves = piece.generateValidMoves(e2, pieceMap);
+// → [e2→e3, e2→e4, e2→e5, ...]
+
+// Kiểm tra nước đi hợp lệ
+if (piece.isValidMove(move, pieceMap)) {
+    // Thực hiện nước đi
+}
+```
+
+### D. TẠI SAO KHÔNG NÊN MODIFY?
+
+**❌ ChessPosition.java:**
+- Core data structure được dùng **MỌI NƠI**
+- Thay đổi sẽ **PHÁ VỠ TOÀN BỘ GAME**
+- Validation và cache đã tối ưu
+- Record class immutable - đảm bảo an toàn
+
+**❌ ChessMove.java:**
+- Lightweight data structure
+- Được tạo và hủy liên tục trong game
+- Thay đổi ảnh hưởng đến tất cả logic game
+- Record class tối ưu, không cần thêm gì
+
+### LƯU Ý KHI BÁO CÁO:
+
+**Nếu thầy hỏi về 2 file này:**
+
+✅ **Giải thích được:**
+- ChessPosition = 1 ô, ChessMove = 1 nước đi
+- ChessMove SỬ DỤNG 2 ChessPosition
+- Record class = immutable, tự động có equals/hashCode
+- ChessPosition có cache 64 object sẵn
+
+✅ **Nhấn mạnh:**
+- Đây là **core data structures**
+- Thể hiện tư duy **abstraction** trong OOP
+- Được sử dụng xuyên suốt project (Model, View, Controller)
+
+✅ **Không modify vì:**
+- Quá nguy hiểm, ảnh hưởng toàn bộ
+- Đã tối ưu, không cần thêm
+- Phá vỡ cấu trúc OOP
+
+---
+
+## 4. MODIFY CÁC THAM SỐ GAME (GAMECONSTANTS)
 
 ### Mức độ: DỄ
 **File**: `src/main/java/nhom16oop/constants/GameConstants.java`
 
-### THAY ĐỔI KÍCH THƯỚC Ô CỜ
+File này chứa các constant quan trọng của game có thể dễ dàng modify.
+
+### A. THAY ĐỔI KÍCH THƯỚC Ô CỜ
 
 ```java
 public static final class Board {
-    public static final int BOARD_SIZE = 8;
-    public static final int SQUARE_SIZE = 100;  // <-- SỬA DÒNG NÀY
-    public static final int BOARD_WIDTH = BOARD_SIZE * SQUARE_SIZE;
-    public static final int BOARD_HEIGHT = BOARD_SIZE * SQUARE_SIZE;
+    public static final int BOARD_SIZE = 8;         // Số ô trên bàn cờ (8x8) - KHÔNG NÊN SỬA
+    public static final int SQUARE_SIZE = 100;      // <-- SỬA DÒNG NÀY: Kích thước mỗi ô (pixel)
+    public static final int BOARD_WIDTH = BOARD_SIZE * SQUARE_SIZE;   // Tự động tính
+    public static final int BOARD_HEIGHT = BOARD_SIZE * SQUARE_SIZE;  // Tự động tính
+}
+```
+
+**Ví dụ thay đổi kích thước ô cờ**:
+```java
+public static final int SQUARE_SIZE = 80;   // Bàn cờ nhỏ hơn (640x640)
+public static final int SQUARE_SIZE = 120;  // Bàn cờ lớn hơn (960x960)
+public static final int SQUARE_SIZE = 60;   // Bàn cờ rất nhỏ (test)
+```
+
+**Hiệu ứng**: 
+- Thay đổi kích thước toàn bộ bàn cờ và quân cờ
+- Hình ảnh tự động scale theo kích thước mới
+- Cửa sổ game tự động điều chỉnh
+
+### B. THAY ĐỔI LUẬT 50 NƯỚC ĐI (FIFTY MOVE RULE)
+
+```java
+public static final int FIFTY_MOVE_RULE_LIMIT = 50;  // <-- SỬA DÒNG NÀY
+```
+
+**Giải thích**: Trong cờ vua, nếu có 50 nước đi liên tiếp mà không có quân nào bị ăn hoặc tốt nào di chuyển, ván đấu sẽ tự động hòa.
+
+**Ví dụ thay đổi giới hạn**:
+```java
+public static final int FIFTY_MOVE_RULE_LIMIT = 30;   // Hòa nhanh hơn (30 nước)
+public static final int FIFTY_MOVE_RULE_LIMIT = 100;  // Chơi lâu hơn (100 nước)
+public static final int FIFTY_MOVE_RULE_LIMIT = 10;   // Test nhanh
+```
+
+**Vị trí áp dụng**: 
+- File: `src/main/java/nhom16oop/game/ChessController.java` (dòng ~699)
+- Hàm: `checkForDraw()` - kiểm tra điều kiện hòa
+
+**Cách test**:
+1. Sửa `FIFTY_MOVE_RULE_LIMIT = 5` (ví dụ)
+2. Rebuild project (Ctrl+F9)
+3. Chơi game và di chuyển quân cờ không ăn quân
+4. Sau 5 nước, game sẽ hiện thông báo hòa
+
+### LƯU Ý QUAN TRỌNG:
+- Sau khi sửa **BẤT KỲ CONSTANT NÀO** trong file này cần **Rebuild project** (Ctrl+F9)
+- `BOARD_SIZE = 8` **KHÔNG NÊN SỬA** vì sẽ phá vỡ logic game (cờ vua luôn là 8x8)
+- `BOARD_WIDTH` và `BOARD_HEIGHT` **TỰ ĐỘNG TÍNH** dựa vào SQUARE_SIZE, không cần sửa
+
+---
+
+## 4B. MODIFY CÁC LUẬT CỜ VUA (BOARDSTATE)
+
+### Mức độ: TRUNG BÌNH
+**File**: `src/main/java/nhom16oop/core/model/BoardState.java`
+
+File này quản lý **trạng thái bàn cờ** và các **luật cờ vua đặc biệt** như nhập thành, en passant, luật 50 nước đi.
+
+### NỘI DUNG FILE:
+- Lưu trữ vị trí tất cả quân cờ trên bàn
+- Quản lý lượt chơi hiện tại (WHITE/BLACK)
+- Theo dõi quyền nhập thành (castling rights)
+- Xử lý nước đi en passant (ăn tốt qua đường)
+- Chuyển đổi FEN string (Forsyth-Edwards Notation)
+
+### A. TẮT HOÀN TOÀN NHẬP THÀNH (CASTLING)
+
+**Mức độ**: DỄ - CHỈ COMMENT 1 ĐOẠN CODE
+
+**Vị trí**: Hàm `setLastMove()` (dòng ~129-158)
+
+**Cách làm**: Comment toàn bộ phần xử lý castling rights
+
+```java
+public void setLastMove(ChessMove lastMove) {
+    this.lastMove = lastMove;
+    updateEnPassantTargetSquare();
+
+    // COMMENT TOÀN BỘ ĐOẠN NÀY ĐỂ TẮT CASTLING
+    // if (lastMove != null) {
+    //     ChessPiece movedPiece = chessPieceMap.getPiece(lastMove.start());
+    //     ChessPosition start = lastMove.start();
+    //     if (movedPiece instanceof King) {
+    //         if (movedPiece.getColor() == PieceColor.WHITE) {
+    //             whiteCanCastleKingside = false;
+    //             whiteCanCastleQueenside = false;
+    //         } else {
+    //             blackCanCastleKingside = false;
+    //             blackCanCastleQueenside = false;
+    //         }
+    //     } else if (movedPiece instanceof Rook) {
+    //         if (movedPiece.getColor() == PieceColor.WHITE) {
+    //             if (start.equals(ChessPosition.get("H1"))) {
+    //                 whiteCanCastleKingside = false;
+    //             } else if (start.equals(ChessPosition.get("A1"))) {
+    //                 whiteCanCastleQueenside = false;
+    //             }
+    //         } else {
+    //             if (start.equals(ChessPosition.get("H8"))) {
+    //                 blackCanCastleKingside = false;
+    //             } else if (start.equals(ChessPosition.get("A8"))) {
+    //                 blackCanCastleQueenside = false;
+    //             }
+    //         }
+    //     }
+    // }
+}
+```
+
+**Kết quả**: Game sẽ KHÔNG CHO PHÉP nhập thành trong suốt ván đấu.
+
+### B. CHỈ TẮT NHẬP THÀNH PHÍ A VUA (KINGSIDE)
+
+**Vị trí**: Trong hàm `setLastMove()`, comment một phần
+
+```java
+if (movedPiece instanceof King) {
+    if (movedPiece.getColor() == PieceColor.WHITE) {
+        whiteCanCastleKingside = false;  // Giữ dòng này
+        // whiteCanCastleQueenside = false;  // Comment dòng này
+    } else {
+        blackCanCastleKingside = false;  // Giữ dòng này
+        // blackCanCastleQueenside = false;  // Comment dòng này
+    }
+}
+```
+
+**Kết quả**: Chỉ cho phép nhập thành phía hậu (queenside), không cho phép nhập thành phía vua (kingside).
+
+### C. TẮT LUẬT EN PASSANT (ĂN TỐT QUA ĐƯỜNG)
+
+**Mức độ**: DỄ
+
+**Vị trí**: Hàm `updateEnPassantTargetSquare()` (dòng ~189-197)
+
+```java
+public void updateEnPassantTargetSquare() {
+    // COMMENT TOÀN BỘ ĐỂ TẮT EN PASSANT
+    // if (lastMove != null && chessPieceMap.getPiece(lastMove.end()) instanceof Pawn 
+    //     && Math.abs(lastMove.start().row() - lastMove.end().row()) == 2) {
+    //     int enPassantRow = (lastMove.start().row() + lastMove.end().row()) / 2;
+    //     enPassantTargetSquare = new ChessPosition(lastMove.end().col(), enPassantRow);
+    // } else {
+    //     enPassantTargetSquare = null;
+    // }
+    
+    // THÊM DÒNG NÀY
+    enPassantTargetSquare = null;  // Luôn luôn null = không có en passant
+}
+```
+
+**Kết quả**: Game sẽ KHÔNG CHO PHÉP ăn tốt qua đường.
+
+### D. CHO PHÉP NHẬP THÀNH MỌI LÚC (BỎ QUA ĐIỀU KIỆN)
+
+**Mức độ**: TRUNG BÌNH - CẦN THẬN TRỌNG
+
+**Vị trí**: Constructor `BoardState(ChessPieceMap chessPieceMap)` (dòng ~45-69)
+
+```java
+public BoardState(ChessPieceMap chessPieceMap) {
+    this.chessPieceMap = chessPieceMap;
+    if (!chessPieceMap.getPieceMap().isEmpty()) {
+        // COMMENT TOÀN BỘ PHẦN CHECK ĐIỀU KIỆN
+        // ChessPosition whiteKingPosition = chessPieceMap.getKingPosition(PieceColor.WHITE);
+        // if (whiteKingPosition == null) {
+        //     throw new IllegalStateException("White King position is null");
+        // }
+        // King whiteKing = chessPieceMap.getKing(PieceColor.WHITE);
+        // this.whiteCanCastleKingside = whiteKing.canCastleKingside(whiteKingPosition, chessPieceMap);
+        // this.whiteCanCastleQueenside = whiteKing.canCastleQueenside(whiteKingPosition, chessPieceMap);
+        
+        // ... (tương tự cho Black King)
+        
+        // THÊM DÒNG NÀY - CHO PHÉP LUÔN
+        this.whiteCanCastleKingside = true;
+        this.whiteCanCastleQueenside = true;
+        this.blackCanCastleKingside = true;
+        this.blackCanCastleQueenside = true;
+    }
+}
+```
+
+**LƯU Ý**: Cách này có thể gây lỗi logic game vì cho phép nhập thành kể cả khi vua/xe đã di chuyển. **KHÔNG KHUYẾN KHÍCH**.
+
+### E. THAY ĐỔI VỊ TRÍ NHẬP THÀNH
+
+**Mức độ**: KHÓ - KHÔNG NÊN LÀM TRONG BÁO CÁO
+
+Vị trí nhập thành được hard-code trong `King.java` (hàm `canCastleKingside()` và `canCastleQueenside()`). Thay đổi cần sửa nhiều file.
+
+### F. HIỂU VỀ FEN STRING
+
+**Vị trí**: Hàm `setFromFEN()` (dòng ~75-125)
+
+FEN (Forsyth-Edwards Notation) là cách lưu trạng thái bàn cờ dưới dạng string.
+
+**Ví dụ FEN**:
+```
+rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+```
+
+**Cấu trúc**:
+1. **Vị trí quân cờ**: `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR`
+   - Chữ hoa = quân trắng, chữ thường = quân đen
+   - Số = số ô trống
+   - `/` = xuống hàng tiếp theo
+   
+2. **Lượt chơi**: `w` (white) hoặc `b` (black)
+
+3. **Quyền nhập thành**: `KQkq`
+   - K = White kingside, Q = White queenside
+   - k = Black kingside, q = Black queenside
+   - `-` = không ai có quyền nhập thành
+
+4. **En passant target**: `-` (không có) hoặc vị trí (vd: `e3`)
+
+5. **Halfmove clock**: Số nước đi không ăn quân/di chuyển tốt
+
+6. **Fullmove number**: Số lượt đi đầy đủ
+
+**Cách test**: Thay đổi FEN trong Puzzle mode để tạo vị trí khác nhau.
+
+### LƯU Ý KHI MODIFY BOARDSTATE:
+
+**✅ DỄ VÀ AN TOÀN**:
+- Tắt nhập thành (comment code trong `setLastMove()`)
+- Tắt en passant (comment code trong `updateEnPassantTargetSquare()`)
+
+**⚠️ TRUNG BÌNH - CẦN THẬN TRỌNG**:
+- Thay đổi điều kiện nhập thành trong constructor
+- Sửa FEN parsing
+
+**❌ KHÓ - KHÔNG NÊN LÀM**:
+- Thay đổi vị trí nhập thành (cần sửa nhiều file)
+- Thay đổi cấu trúc lưu trữ board state
+
+**QUAN TRỌNG**: 
+- File này là **CORE MODEL** của game
+- Sửa sai có thể phá vỡ toàn bộ logic
+- **LUÔN LUÔN REBUILD** sau khi sửa (Ctrl+F9)
+- **TEST KỸ** trước khi báo cáo
+
+---
+
+## 5. MODIFY LOGIC KIỂM TRA NƯỚC ĐI (CHESSPIECE)
+
+### Mức độ: TRUNG BÌNH - KHÓ
+**File**: `src/main/java/nhom16oop/core/model/ChessPiece.java`
+
+### GIỚI THIỆU VỀ FILE:
+
+**ChessPiece.java** là **abstract base class** (lớp cha trừu tượng) cho TẤT CẢ quân cờ:
+- King, Queen, Rook, Bishop, Knight, Pawn đều **KẾ THỪA** từ class này
+- Chứa logic **KIỂM TRA NƯỚC ĐI HỢP LỆ** - ngăn người chơi đi nước khiến vua bị chiếu
+- Là file **THỂ HIỆN TƯ DUY OOP** rõ nhất (Abstraction, Inheritance, Polymorphism)
+
+### CÁC THUỘC TÍNH QUAN TRỌNG:
+
+```java
+private final PieceColor color;        // Màu quân cờ (WHITE/BLACK)
+private Image image;                   // Hình ảnh quân cờ
+protected int pieceValue = 0;          // Giá trị quân cờ
+private boolean hasMoved = false;      // Đã di chuyển chưa
+```
+
+### A. TẮT KIỂM TRA CHIẾU VUA (CHO PHÉP ĐI NƯỚC ĐỂ VUA BỊ CHIẾU)
+
+**Mức độ**: TRUNG BÌNH - DEMO TỐT CHO BÁO CÁO
+
+**Vị trí**: Hàm `isValidMove()` (dòng ~93-105)
+
+**Giải thích logic hiện tại**:
+```java
+public boolean isValidMove(ChessMove move, ChessPieceMap pieceMap) {
+    // Bước 1: Lấy tất cả nước đi có thể của quân
+    final List<ChessMove> moves = generateValidMoves(move.start(), pieceMap);
+
+    // Bước 2: Với mỗi nước đi, kiểm tra xem có để vua bị chiếu không
+    for (ChessMove chessMove : moves) {
+        ChessPieceMap tempMap = BoardUtils.simulateMove(chessMove, pieceMap);
+        
+        // Kiểm tra: Nước đi có để vua bị chiếu không?
+        if (!BoardUtils.isKingInCheck(this.color, tempMap) && chessMove.equals(move)) {
+            return true;  // Chỉ chấp nhận nếu KHÔNG bị chiếu
+        }
+    }
+
+    return false;
+}
+```
+
+**MODIFY - TẮT KIỂM TRA CHIẾU VUA**:
+
+```java
+public boolean isValidMove(ChessMove move, ChessPieceMap pieceMap) {
+    final List<ChessMove> moves = generateValidMoves(move.start(), pieceMap);
+
+    // COMMENT TOÀN BỘ PHẦN KIỂM TRA CHIẾU VUA
+    // for (ChessMove chessMove : moves) {
+    //     ChessPieceMap tempMap = BoardUtils.simulateMove(chessMove, pieceMap);
+    //     if (!BoardUtils.isKingInCheck(this.color, tempMap) && chessMove.equals(move)) {
+    //         return true;
+    //     }
+    // }
+    
+    // THÊM CODE MỚI - CHỈ KIỂM TRA NƯỚC ĐI CÓ TRONG DANH SÁCH HAY KHÔNG
+    for (ChessMove chessMove : moves) {
+        if (chessMove.equals(move)) {
+            return true;  // Chấp nhận bất kỳ nước đi nào trong danh sách
+        }
+    }
+
+    return false;
+}
+```
+
+**KẾT QUẢ**: 
+- ✅ Người chơi có thể đi nước khiến vua bị chiếu
+- ✅ Game KHÔNG tự động kiểm tra và ngăn chặn
+- ⚠️ KHÔNG THEO LUẬT CỜ VUA CHUẨN (nhưng tốt cho demo)
+
+**Cách test**:
+1. Sửa code như trên
+2. Rebuild project (Ctrl+F9)
+3. Chơi game và cố tình đi nước để vua bị chiếu
+4. Game sẽ CHO PHÉP thực hiện nước đi đó
+
+### B. THAY ĐỔI KÍCH THƯỚC HÌNH ẢNH QUÂN CỜ MẶC ĐỊNH
+
+**Mức độ**: DỄ
+
+**Vị trí**: Constructor (dòng ~32-34)
+
+```java
+public ChessPiece(PieceColor color, String imageFileName) {
+    this(color, imageFileName, 95);  // <-- SỬA SỐ NÀY
 }
 ```
 
 **Ví dụ**:
 ```java
-public static final int SQUARE_SIZE = 80;   // Bàn cờ nhỏ hơn
-public static final int SQUARE_SIZE = 120;  // Bàn cờ lớn hơn
+this(color, imageFileName, 80);   // Quân cờ nhỏ hơn
+this(color, imageFileName, 110);  // Quân cờ lớn hơn
 ```
 
-**Lưu ý**: Sau khi sửa cần **Rebuild project** (Ctrl+F9)
+**Lưu ý**: Nếu thay đổi `SQUARE_SIZE` trong `GameConstants.java` thì nên thay đổi size này tương ứng để quân cờ không bị quá to/nhỏ so với ô.
+
+### C. THÊM LOGGING ĐỂ DEBUG
+
+**Mức độ**: DỄ - TỐT CHO DEMO HIỂU CODE
+
+**Vị trí**: Trong hàm `isValidMove()` (dòng ~93)
+
+```java
+public boolean isValidMove(ChessMove move, ChessPieceMap pieceMap) {
+    // THÊM LOGGING
+    logger.info("Checking move: " + move + " for piece: " + this.getPieceNotation());
+    
+    final List<ChessMove> moves = generateValidMoves(move.start(), pieceMap);
+    
+    // THÊM LOGGING
+    logger.info("Generated " + moves.size() + " possible moves");
+
+    for (ChessMove chessMove : moves) {
+        ChessPieceMap tempMap = BoardUtils.simulateMove(chessMove, pieceMap);
+        if (!BoardUtils.isKingInCheck(this.color, tempMap) && chessMove.equals(move)) {
+            // THÊM LOGGING
+            logger.info("Move is valid!");
+            return true;
+        }
+    }
+    
+    // THÊM LOGGING
+    logger.info("Move is invalid!");
+    return false;
+}
+```
+
+**KẾT QUẢ**: Trong console sẽ hiện log mỗi khi kiểm tra nước đi, giúp hiểu flow của code.
+
+### D. HIỂU VỀ CÁC PHƯƠNG THỨC TRỪU TƯỢNG (ABSTRACT METHODS)
+
+**KHÔNG MODIFY** các phương thức này trong ChessPiece.java, nhưng cần **HIỂU** để giải thích trong báo cáo:
+
+#### **1. `generateValidMoves(ChessPosition start, ChessPieceMap pieceMap)`**
+
+- **Chức năng**: Tạo danh sách tất cả nước đi có thể từ vị trí hiện tại
+- **Abstract**: Mỗi quân cờ implement khác nhau
+- **Ví dụ**:
+  - `King.generateValidMoves()` → 8 hướng, mỗi hướng 1 ô + nhập thành
+  - `Queen.generateValidMoves()` → 8 hướng không giới hạn
+  - `Knight.generateValidMoves()` → 8 vị trí hình chữ L
+
+#### **2. `getPieceNotation()`**
+
+- **Chức năng**: Trả về ký hiệu quân cờ theo chuẩn quốc tế
+- **Implement ở mỗi quân**:
+  - King → "K"
+  - Queen → "Q"
+  - Rook → "R"
+  - Bishop → "B"
+  - Knight → "N"
+  - Pawn → "P"
+
+#### **3. `deepCopy()`**
+
+- **Chức năng**: Tạo bản sao sâu của quân cờ
+- **Dùng cho**: AI tính toán, mô phỏng nước đi, undo/redo
+
+### E. HIỂU VỀ QUAN HỆ KẾ THỪA (INHERITANCE)
+
+```
+ChessPiece (Abstract) ← LỚP CHA
+    ├── King.java           ← LỚP CON
+    ├── Queen.java          ← LỚP CON
+    ├── Rook.java           ← LỚP CON
+    ├── Bishop.java         ← LỚP CON
+    ├── Knight.java         ← LỚP CON
+    └── Pawn.java           ← LỚP CON
+```
+
+**Các lớp con KẾ THỪA từ ChessPiece**:
+- ✅ Thuộc tính: `color`, `image`, `pieceValue`, `hasMoved`
+- ✅ Phương thức: `isValidMove()`, `getColor()`, `getImage()`, `compareTo()`
+- ✅ PHẢI IMPLEMENT: `generateValidMoves()`, `getPieceNotation()`, `deepCopy()`
+
+**Đây là ĐA HÌNH (Polymorphism)**:
+```java
+ChessPiece piece = new King(PieceColor.WHITE, "white_king.png");  // Biến kiểu cha
+List<ChessMove> moves = piece.generateValidMoves(...);  // Gọi đúng King.generateValidMoves()
+```
+
+### LƯU Ý KHI MODIFY CHESSPIECE:
+
+**✅ DỄ VÀ AN TOÀN**:
+- Thêm logging để debug
+- Thay đổi kích thước hình ảnh mặc định
+
+**⚠️ TRUNG BÌNH - DEMO TỐT**:
+- Tắt kiểm tra chiếu vua (comment code trong `isValidMove()`)
+- Hiệu ứng rõ ràng, dễ test
+
+**❌ KHÓ - KHÔNG NÊN LÀM**:
+- Thay đổi cấu trúc thuộc tính (ảnh hưởng toàn bộ 6 lớp con)
+- Xóa phương thức abstract (phá vỡ contract với lớp con)
+- Thay đổi logic trong `compareTo()` (ảnh hưởng sắp xếp)
+
+**QUAN TRỌNG**: 
+- File này là **CORE OOP** của project - thể hiện Abstraction, Inheritance, Polymorphism
+- Khi báo cáo, đây là file **PHẢI GIẢI THÍCH** về tư duy OOP
+- **LUÔN LUÔN REBUILD** sau khi sửa (Ctrl+F9)
+- **TEST KỸ** vì ảnh hưởng đến tất cả quân cờ
 
 ---
 
-## 5. MODIFY TOOLBAR (CÁC NÚT CHỨC NĂNG)
+## 6. MODIFY TOOLBAR (CÁC NÚT CHỨC NĂNG)
 
 ### Mức độ: DỄ
 **File**: `src/main/java/nhom16oop/ui/components/panels/ChessToolbar.java`
@@ -392,7 +979,7 @@ buttonConfigs.add(new ButtonConfig("Resign", "images/resign.png", e -> { ... },
 
 ---
 
-## 6. MODIFY ÂM THANH
+## 7. MODIFY ÂM THANH
 
 ### Mức độ: RẤT DỄ
 **File**: `src/main/java/nhom16oop/utils/SoundPlayer.java`
@@ -422,7 +1009,7 @@ private static void playSound(String soundFile) {
 
 ---
 
-## 6. MODIFY GIÁ TRỊ QUÂN CỜ
+## 8. MODIFY GIÁ TRỊ QUÂN CỜ
 
 ### Mức độ: DỄ
 **Vị trí**: Trong constructor mỗi quân cờ
@@ -454,7 +1041,7 @@ this.pieceValue = 15;
 
 ---
 
-## 7. HIỂU VỀ LOGIC CHIẾU TƯỚNG VÀ ĂN QUÂN
+## 9. HIỂU VỀ LOGIC CHIẾU TƯỚNG VÀ ĂN QUÂN
 
 ### Mức độ: KHUYẾN CÁO - CHỈ ĐỌC ĐỂ HIỂU, KHÔNG NÊN SỬA
 
@@ -517,7 +1104,7 @@ src/main/java/nhom16oop/core/model/ChessPiece.java
 
 ---
 
-## 8. THÔNG TIN BỔ SUNG VỀ CẤU TRÚC UI
+## 10. THÔNG TIN BỔ SUNG VỀ CẤU TRÚC UI
 
 ### A. KÍCH THƯỚC WINDOW
 
@@ -555,7 +1142,7 @@ Hint sử dụng **Stockfish engine** để tính toán nước đi tốt nhất
 
 ---
 
-## 9. NHỮNG ĐIỀU CẦN BIẾT KHI BÁO CÁO
+## 11. NHỮNG ĐIỀU CẦN BIẾT KHI BÁO CÁO
 
 ### KIẾN THỨC CƠ BẢN VỀ OOP ĐƯỢC ÁP DỤNG:
 
@@ -599,7 +1186,10 @@ Hint sử dụng **Stockfish engine** để tính toán nước đi tốt nhất
 - [ ] Làm quen với cách comment code (Ctrl+/ hoặc Ctrl+Shift+/)
 
 ### File quan trọng cần nắm:
+- [ ] **Core data structures**: `ChessPosition.java` & `ChessMove.java` (KHÔNG SỬA - core structure)
+- [ ] **Base class quân cờ**: `src/main/java/nhom16oop/core/model/ChessPiece.java` (Lớp cha trừu tượng)
 - [ ] **Quân cờ**: `src/main/java/nhom16oop/core/pieces/*.java` (King, Queen, Rook, Bishop, Knight, Pawn)
+- [ ] **Board State**: `src/main/java/nhom16oop/core/model/BoardState.java` (Quản lý trạng thái bàn cờ)
 - [ ] **Timer**: `src/main/java/nhom16oop/game/ChessTimer.java`
 - [ ] **Controller**: `src/main/java/nhom16oop/game/ChessController.java`
 - [ ] **UI**: `src/main/java/nhom16oop/ui/ChessUI.java`
@@ -609,6 +1199,8 @@ Hint sử dụng **Stockfish engine** để tính toán nước đi tốt nhất
 
 ### Kỹ năng cần có:
 - [ ] Biết modify nước đi 1 quân cờ (ví dụ: King đi như Rook)
+- [ ] Biết cách tắt kiểm tra chiếu vua (trong ChessPiece.java)
+- [ ] Biết cách tắt nhập thành hoặc en passant (trong BoardState.java)
 - [ ] Biết cách ẩn/hiện timer
 - [ ] Biết cách thay đổi thời gian timer
 - [ ] Biết cách ẩn/hiện nút trên toolbar
@@ -700,12 +1292,50 @@ A: Đảm bảo dùng font hỗ trợ Unicode như Arial, Georgia, Roboto. Trán
 **Q: Thay đổi font có cần rebuild không?**  
 A: CÓ. Luôn rebuild (Ctrl+F9) sau khi thay đổi font hoặc text.
 
+**Q: ChessPiece.java là file gì?**  
+A: Đây là **abstract base class** (lớp cha trừu tượng) cho TẤT CẢ quân cờ. King, Queen, Rook, Bishop, Knight, Pawn đều kế thừa từ ChessPiece.
+
+**Q: Làm sao tắt kiểm tra chiếu vua (cho phép đi nước để vua bị chiếu)?**  
+A: Trong file `ChessPiece.java`, hàm `isValidMove()`, comment phần kiểm tra `isKingInCheck()` và chỉ giữ lại phần kiểm tra nước đi có trong danh sách hay không. Chi tiết xem mục 5.
+
+**Q: Tắt kiểm tra chiếu vua có ảnh hưởng đến các quân khác không?**  
+A: CÓ - vì tất cả quân đều kế thừa từ ChessPiece và dùng chung hàm `isValidMove()`. Đây là ví dụ về **Inheritance** trong OOP.
+
+**Q: Sự khác nhau giữa `generateValidMoves()` và `isValidMove()` là gì?**  
+A: 
+- `generateValidMoves()`: Tạo danh sách TẤT CẢ nước đi có thể (theo luật di chuyển của quân)
+- `isValidMove()`: Kiểm tra 1 nước đi cụ thể có hợp lệ không (bao gồm cả kiểm tra chiếu vua)
+
+**Q: Tại sao mỗi quân cờ có `generateValidMoves()` khác nhau?**  
+A: Vì đây là **abstract method** - mỗi quân override và implement logic di chuyển riêng. Đây là ví dụ về **Polymorphism**.
+
+**Q: BoardState.java dùng để làm gì?**  
+A: Lưu trữ "ảnh chụp màn hình" của bàn cờ tại 1 thời điểm, bao gồm vị trí quân, quyền nhập thành, en passant, lượt chơi. Dùng cho save/load game, undo/redo.
+
+**Q: Làm sao tắt nhập thành (castling)?**  
+A: Comment code trong hàm `setLastMove()` của `BoardState.java`. Chi tiết xem mục 4B.
+
+**Q: ChessPosition.java là file gì?**  
+A: Đại diện cho **1 ô trên bàn cờ** với tọa độ (col, row). Ví dụ: "e4" = ChessPosition(4, 3). Được dùng làm **key trong Map**, lưu vị trí quân cờ.
+
+**Q: ChessMove.java là file gì?**  
+A: Đại diện cho **1 nước đi** với 2 ChessPosition (start, end). Ví dụ: "e2e4" = ChessMove(e2, e4). Được dùng để tạo danh sách nước đi hợp lệ.
+
+**Q: Sự khác nhau giữa ChessPosition và ChessMove?**  
+A: ChessPosition = 1 ô trên bàn cờ. ChessMove = 1 nước đi (từ ô này đến ô khác). ChessMove SỬ DỤNG 2 ChessPosition.
+
+**Q: Tại sao KHÔNG NÊN sửa ChessPosition và ChessMove?**  
+A: Vì đây là **core data structures** được dùng MỌI NƠI trong project. Thay đổi sẽ phá vỡ toàn bộ game. Record class đã tối ưu, không cần thêm gì.
+
+**Q: ChessPosition có cache là gì?**  
+A: ChessPosition tạo sẵn 64 object cho tất cả ô a1→h8. Khi gọi `get("e4")` không tạo object mới mà lấy từ cache → tiết kiệm bộ nhớ và nhanh hơn.
+
 ---
 
 ## TIPS KHI DEMO/BÁO CÁO
 
 1. **Chuẩn bị trước**: Test tất cả modify trước khi báo cáo
-2. **Giải thích OOP**: Biết được class nào kế thừa class nào (xem phần 9)
+2. **Giải thích OOP**: Biết được class nào kế thừa class nào (xem phần 10)
 3. **Nhấn mạnh tính độc lập**: Mỗi quân cờ là 1 object độc lập
 4. **Hiểu về MVC**: Biết phân biệt Model, View, Controller
 5. **Chuẩn bị 2-3 modify đơn giản**: Ví dụ như đổi thời gian timer, ẩn nút, thay đổi giá trị quân
@@ -722,6 +1352,6 @@ A: CÓ. Luôn rebuild (Ctrl+F9) sau khi thay đổi font hoặc text.
 
 ---
 
-**Cập nhật cuối**: 29/11/2025  
+**Cập nhật cuối**: 30/11/2025  
 **Người tạo**: Nhóm 16 OOP
 
