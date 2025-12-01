@@ -27,7 +27,7 @@ public class ChessLauncher {
                     "Continue last saved");
             if (c == JOptionPane.YES_OPTION) {
                 if (gs != null) {
-                    ChessUI ui = new ChessUI(gs); // you may add a constructor that accepts ChessController directly
+                    ChessUI ui = new ChessUI(gs);
                     ui.show();
                     return;
                 }

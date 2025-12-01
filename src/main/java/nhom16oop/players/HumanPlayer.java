@@ -10,19 +10,16 @@ import nhom16oop.game.ChessController;
  * Represents a human player who interacts with the chess game through the user interface.
  */
 public class HumanPlayer implements Player {
-
     private static final Logger logger = LoggerFactory.getLogger(HumanPlayer.class);
-    private final ChessController chessController;
     private final PieceColor playerColor;
 
     /**
      * Constructs a HumanPlayer with the specified chess controller and color.
      *
-     * @param chessController the controller managing the chess game
+     * @param chessController the controller managing the chess game, not use
      * @param playerColor     the color of the player (White or Black)
      */
     public HumanPlayer(ChessController chessController, PieceColor playerColor) {
-        this.chessController = chessController;
         this.playerColor = playerColor;
         logger.info("HumanPlayer initialized with color: {}", playerColor.isWhite() ? "White" : "Black");
     }

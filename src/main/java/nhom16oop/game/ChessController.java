@@ -62,11 +62,8 @@ public final class ChessController implements MoveExecutor {
     private ChessTimer chessTimer;
     private boolean timerEnabled = false;
 
-    private String puzzleFEN;
     private int puzzleMaxMoves;
     private int puzzleCurrentMoves;
-    private boolean puzzleCompleted;
-    private boolean puzzleFailed;
 
     private final List<PlayerPanelListener> playerPanelListeners = new ArrayList<>();
     private final List<GameStateListener> gameStateListeners = new ArrayList<>();
@@ -139,11 +136,8 @@ public final class ChessController implements MoveExecutor {
      */
     public void setPuzzleMode(String fen, int maxMoves) {
         this.gameMode = GameMode.PUZZLE_MODE;
-        this.puzzleFEN = fen;
         this.puzzleMaxMoves = maxMoves;
         this.puzzleCurrentMoves = 0;
-        this.puzzleCompleted = false;
-        this.puzzleFailed = false;
         
         // Load board từ FEN
         boardManager.loadFromFEN(fen);
@@ -665,7 +659,6 @@ public final class ChessController implements MoveExecutor {
             // Kiểm tra chiếu hết đối thủ (THẮNG)
             if (BoardUtils.isCheckmate(opponentColor, boardManager.getChessPieceMap())) {
                 gameEnded = true;
-                puzzleCompleted = true;
                 SwingUtilities.invokeLater(() -> {
                     GameOverDialog dialog = new GameOverDialog(
                         frame, 
@@ -679,7 +672,6 @@ public final class ChessController implements MoveExecutor {
             // Kiểm tra hết nước đi (THUA)
             if (puzzleCurrentMoves >= puzzleMaxMoves) {
                 gameEnded = true;
-                puzzleFailed = true;
                 SwingUtilities.invokeLater(() -> {
                     GameOverDialog dialog = new GameOverDialog(
                         frame, 
